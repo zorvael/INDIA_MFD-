@@ -72,7 +72,66 @@ $("#importBtn").addEventListener("click",()=>$("#importFile").click());
 $("#importFile").addEventListener("change",async e=>{
  const file=e.currentTarget.files[0];if(!file)return;
  if(file.size>1500000){toast("CSV must be smaller than 1.5 MB.");e.currentTarget.value="";return;}
- try{const csv=await file.text();const result=await api("/api/import",{method:"POST",body:JSON.stringify({csv})});await refresh();toast(`Import complete: ${result.added} added, ${result.skipped} duplicates skipped`);}
+ try{
+  const source=await file.text();
+  const csv=isUtiReport(source)?sanitizeUtiReport(source):source;
+  const result=await api("/api/import",{method:"POST",body:JSON.stringify({csv})});
+  await refresh();toast(`Import complete: ${result.added} added, ${result.skipped} duplicates skipped`);
+ }
  catch(err){toast(err.message);}
  finally{e.currentTarget.value="";}
 });
+
+function parseCsv(text){
+ const rows=[];let row=[],cell="",quoted=false;
+ for(let i=0;i<text.length;i++){
+  const ch=text[i];
+  if(quoted){if(ch==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(ch==='"')quoted=false;else cell+=ch;}
+  else if(ch==='"')quoted=true;
+  else if(ch===","){row.push(cell);cell="";}
+  else if(ch==="\\n"){row.push(cell);rows.push(row);row=[];cell="";}
+  else if(ch!=="\\r")cell+=ch;
+ }
+ if(quoted)throw new Error("CSV has an unclosed quotation mark.");
+ if(cell.length||row.length){row.push(cell);rows.push(row);}
+ return rows;
+}
+function isUtiReport(text){
+ try{return parseCsv(text.replace(/^\\uFEFF/,"")).some(row=>row.includes("Investor Name")&&row.includes("Installment Amount")&&row.includes("Scheme")&&row.includes("Status"));}catch{return false;}
+}
+function sanitizeUtiReport(text){
+ const rows=parseCsv(text.replace(/^\\uFEFF/,""));
+ const headerIndex=rows.findIndex(row=>row.includes("Investor Name")&&row.includes("Installment Amount")&&row.includes("Scheme")&&row.includes("Status"));
+ if(headerIndex<0)throw new Error("UTI report columns were not recognized.");
+ const headers=rows[headerIndex].map(x=>x.trim());
+ const at=name=>headers.indexOf(name);
+ const required=["Investor Name","Scheme","Installment Amount","Status"];
+ if(required.some(name=>at(name)<0))throw new Error("UTI report is missing required columns.");
+ const dayOf=value=>{
+  const s=String(value||"").trim();let m;
+  if((m=s.match(/^\\d{4}[-/]\\d{1,2}[-/](\\d{1,2})/)))return Number(m[1]);
+  if((m=s.match(/^(\\d{1,2})[-/]\\d{1,2}[-/]\\d{4}/)))return Number(m[1]);
+  return "";
+ };
+ const cleanField=value=>String(value??"").replace(/[\\r\\n]/g," ").trim();
+ const csvCell=value=>'"'+String(value??"").replaceAll('"','""')+'"';
+ const out=[["investor","email","phone","scheme","monthly_amount_inr","status","due_day"]];
+ for(const row of rows.slice(headerIndex+1)){
+  if(!row.some(v=>String(v||"").trim()))continue;
+  let status=String(row[at("Status")]||"").toLowerCase();
+  if(/live|active/.test(status))status="active";
+  else if(/stopp|cancel|terminat|discontinu/.test(status))status="stopped";
+  else if(/register|pending/.test(status))status="registered";
+  const day=dayOf(at("Start Date")<0?"":row[at("Start Date")]);
+  out.push([
+   cleanField(row[at("Investor Name")]),
+   cleanField(at("Email")<0?"":row[at("Email")]),
+   cleanField(at("Mobile")<0?"":row[at("Mobile")]),
+   cleanField(row[at("Scheme")]),
+   cleanField(row[at("Installment Amount")]),
+   status,
+   day&&day<=28?day:""
+  ]);
+ }
+ return out.map(row=>row.map(csvCell).join(",")).join("\\r\\n");
+}
