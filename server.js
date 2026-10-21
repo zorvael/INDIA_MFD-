@@ -240,4 +240,4 @@ app.use(express.static(path.join(__dirname,"public"), { index: false, maxAge: is
 app.get("/", (req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
 app.get("/login", (req,res)=>res.sendFile(path.join(__dirname,"public","index.html")));
 app.use((err,req,res,next)=>{ console.error(err.message); res.status(500).json({error:"Something went wrong."}); });
-app.listen(PORT, ()=>console.log(`MFD dashboard listening on port ${PORT}`));
+app.listen(PORT, "0.0.0.0", ()=>console.log(`MFD dashboard listening on port ${PORT}`));
