@@ -36,14 +36,14 @@ Deploy behind HTTPS. The app enables secure cookies in production. Back up the d
 - Hashed password login, login rate limiting, server-side SQLite sessions, HttpOnly/SameSite cookies, session rotation, CSRF checks and security headers
 - Investor records and investor-wise SIP entries
 - Active, stopped and registered status labels, monthly amounts and recorded due days
-- CSV export with spreadsheet formula neutralization
+- CSV import in the exported format, with validation and duplicate SIP skipping\n- CSV export with spreadsheet formula neutralization
 - Daily due-day view based on the records in the database
 
 ## Not included
 
 - Live NAV, current valuation, units/holdings, transactions, automated SIP registration or stop checks
 - Automated daily updates or messages to clients
-- CSV import or multi-user/role management
+- Multi-user/role management
 
 These need an authorized and documented data provider/API, proper permissions, and a defined import format. Do not use investor login credentials, scrape AMC/RTA portals, or store personal banking credentials in this app. Once an authorized source is chosen, build its integration as a separate server-side connector and show the source and timestamp for each update.
 
