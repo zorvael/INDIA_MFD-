@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: india-mfd-dashboard
+    runtime: node
+    plan: 0.5c-512mb
+    region: singapore
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    disk:
+      name: mfd-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /var/data/mfd.sqlite
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: MFD_ARN
+        sync: false
+      - key: MFD_NAME
+        sync: false
+      - key: MFD_MOBILE
+        sync: false
+      - key: MFD_EMAIL
+        sync: false
