@@ -91,7 +91,16 @@ app.post("/api/logout", requireAuth, requireCsrf, (req, res, next) => {
 });
 app.get("/api/session", (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: "Sign in required." });
-  res.set("Cache-Control", "no-store").json({ username: req.session.username, csrfToken: req.session.csrf });
+  res.set("Cache-Control", "no-store").json({
+    username: req.session.username,
+    csrfToken: req.session.csrf,
+    practice: {
+      arn: process.env.MFD_ARN || "",
+      name: process.env.MFD_NAME || "",
+      mobile: process.env.MFD_MOBILE || "",
+      email: process.env.MFD_EMAIL || ""
+    }
+  });
 });
 
 function requireAuth(req, res, next) {
@@ -169,13 +178,26 @@ app.post("/api/import", (req, res) => {
   let rows;
   try { rows = parse(csv, { columns: true, skip_empty_lines: true, trim: true, bom: true, max_record_size: 10000 }); }
   catch { return res.status(400).json({ error: "CSV format is invalid. Use the exported MFD CSV format." }); }
+  const isUtiExport = rows.length && Object.hasOwn(rows[0], "Investor Name") && Object.hasOwn(rows[0], "Installment Amount") && Object.hasOwn(rows[0], "Scheme") && Object.hasOwn(rows[0], "Status");
   const required = ["investor", "email", "phone", "scheme", "monthly_amount_inr", "status", "due_day"];
-  if (!rows.length || rows.length > 5000 || required.some(key => !Object.hasOwn(rows[0], key))) return res.status(400).json({ error: "CSV needs the exported investor, scheme, amount, status and due day columns, with at most 5,000 rows." });
+  if (!rows.length || rows.length > 5000 || (!isUtiExport && required.some(key => !Object.hasOwn(rows[0], key)))) return res.status(400).json({ error: "Use the dashboard CSV format or the UTI active SIP report format." });
   const cleanRows = [];
   for (const row of rows) {
-    const name=clean(row.investor,120), scheme=clean(row.scheme,160), email=clean(row.email,254), phone=clean(row.phone,40);
-    const amount=Number(row.monthly_amount_inr), status=String(row.status||"").toLowerCase();
-    const dueRaw=String(row.due_day||"").trim(), dueDay=dueRaw?Number(dueRaw):null;
+    const name=clean(isUtiExport ? row["Investor Name"] : row.investor,120);
+    const scheme=clean(isUtiExport ? row.Scheme : row.scheme,160);
+    const email=clean(isUtiExport ? row.Email : row.email,254);
+    const phone=clean(isUtiExport ? row.Mobile : row.phone,40);
+    const amount=Number(isUtiExport ? row["Installment Amount"] : row.monthly_amount_inr);
+    let status=String(isUtiExport ? row.Status : row.status||"").toLowerCase();
+    if (isUtiExport) {
+      if (/live|active/.test(status)) status="active";
+      else if (/stopp|cancel|terminat|discontinu/.test(status)) status="stopped";
+      else if (/register|pending/.test(status)) status="registered";
+      else status="invalid";
+    }
+    const dueRaw=isUtiExport ? String(row["Start Date"]||"").trim() : String(row.due_day||"").trim();
+    const dateMatch=isUtiExport ? dueRaw.match(/^(\\d{1,2})[-/](\\d{1,2})[-/](\\d{4})$/) : null;
+    const dueDay=isUtiExport ? (dateMatch ? Number(dateMatch[1]) : NaN) : (dueRaw ? Number(dueRaw) : null);
     if (!name || !scheme || !Number.isFinite(amount) || amount < 0.01 || !["active","stopped","registered"].includes(status) || (dueDay!==null && (!Number.isInteger(dueDay)||dueDay<1||dueDay>28))) {
       return res.status(400).json({ error: "One or more rows have missing or invalid investor, scheme, amount, status or due day values." });
     }
