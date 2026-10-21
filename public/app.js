@@ -34,7 +34,7 @@ function renderInvestors(){
   list.append(section);
  }
 }
-function sipRow(s){return `<tr><td class="scheme">${esc(s.scheme)}</td><td>${money(s.amount_paise/100)}</td><td><span class="pill ${esc(s.status)}"><i></i>${esc(cap(s.status))}</span></td><td>${s.due_day?"Day "+s.due_day:"—"}</td><td><span class="source-tag">Manual</span></td><td><div class="row-actions"><button data-edit-sip="${s.id}">Edit</button><button data-delete-sip="${s.id}" aria-label="Delete SIP">×</button></div></td></tr>`;}
+function sipRow(s){return `<tr><td class="scheme">${esc(s.scheme)}</td><td>${money(s.amount_paise/100)}</td><td><span class="pill ${esc(s.status)}"><i></i>${esc(cap(s.status))}</span></td><td>${s.due_day?"Day "+s.due_day:"—"}</td><td><span class="source-tag">${esc(cap(s.data_source||"manual"))}</span></td><td><div class="row-actions"><button data-edit-sip="${s.id}">Edit</button><button data-delete-sip="${s.id}" aria-label="Delete SIP">×</button></div></td></tr>`;}
 function renderDue(rows){const box=$("#dueList");box.innerHTML="";if(!rows.length){box.innerHTML='<p class="due-empty">No active SIP due days recorded.</p>';return;}for(const row of rows){const item=document.createElement("div");item.className="due-item";item.innerHTML=`<span class="date-box"><b>${String(row.due_day).padStart(2,"0")}</b><small>DAY</small></span><div><strong>${esc(row.investor)}</strong><p>${esc(row.scheme)}</p></div><span class="due-amount">${money(row.amount_paise/100)}</span>`;box.append(item);}}
 function initials(s){return s.split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();}
 function cap(s){return s[0].toUpperCase()+s.slice(1);}
@@ -60,3 +60,11 @@ $("#investorList").addEventListener("click",async e=>{
 });
 $("#exportBtn").addEventListener("click",async()=>{try{const response=await fetch("/api/export",{headers:{"X-CSRF-Token":csrfToken}});if(!response.ok)throw new Error("Could not export records.");const blob=await response.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="mfd-records.csv";a.click();URL.revokeObjectURL(url);}catch(e){toast(e.message);}});
 start();
+$("#importBtn").addEventListener("click",()=>$("#importFile").click());
+$("#importFile").addEventListener("change",async e=>{
+ const file=e.currentTarget.files[0];if(!file)return;
+ if(file.size>1500000){toast("CSV must be smaller than 1.5 MB.");e.currentTarget.value="";return;}
+ try{const csv=await file.text();const result=await api("/api/import",{method:"POST",body:JSON.stringify({csv})});await refresh();toast(`Import complete: ${result.added} added, ${result.skipped} duplicates skipped`);}
+ catch(err){toast(err.message);}
+ finally{e.currentTarget.value="";}
+});
