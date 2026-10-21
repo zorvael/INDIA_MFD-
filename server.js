@@ -99,7 +99,7 @@ function requireAuth(req, res, next) {
 }
 function requireCsrf(req, res, next) {
   const token = req.get("x-csrf-token") || "";
-  if (!req.session.csrf || !crypto.timingSafeEqual(Buffer.from(token), Buffer.from(req.session.csrf))) {
+  if (!req.session.csrf || token.length !== req.session.csrf.length || !crypto.timingSafeEqual(Buffer.from(token), Buffer.from(req.session.csrf))) {
     return res.status(403).json({ error: "Request verification failed. Refresh and try again." });
   }
   next();
