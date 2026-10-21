@@ -10,10 +10,18 @@ async function api(url,options={}) {
   return response.json();
 }
 async function start(){
- try{const session=await fetch("/api/session",{credentials:"same-origin"});if(!session.ok)throw new Error();const data=await session.json();csrfToken=data.csrfToken;$("#userLabel").textContent=data.username;loginView.hidden=true;appView.hidden=false;await refresh();}
+ try{const session=await fetch("/api/session",{credentials:"same-origin"});if(!session.ok)throw new Error();const data=await session.json();csrfToken=data.csrfToken;$("#userLabel").textContent=data.username;renderPractice(data.practice);loginView.hidden=true;appView.hidden=false;await refresh();}
  catch{showLogin();}
 }
 function showLogin(){appView.hidden=true;loginView.hidden=false;csrfToken="";}
+function renderPractice(profile={}) {
+ const displayName=profile.name || "India MFD";
+ $("#practiceName").textContent=displayName;
+ const details=[profile.arn ? "ARN "+profile.arn : "", profile.mobile || "", profile.email || ""].filter(Boolean);
+ const box=$("#practiceDetails");
+ box.textContent=details.join(" · ");
+ box.hidden=details.length===0;
+}
 async function refresh(){
  const [summary,people,plans]=await Promise.all([api("/api/dashboard"),api("/api/investors"),api("/api/sips")]);
  investors=people;sips=plans;
@@ -42,7 +50,7 @@ function populateInvestorOptions(){const select=$("#sipForm [name=investorId]");
 function openInvestor(person){const form=$("#investorForm");form.reset();form.elements.namedItem("id").value=person?.id||"";form.elements.namedItem("name").value=person?.name||"";form.elements.namedItem("email").value=person?.email||"";form.elements.namedItem("phone").value=person?.phone||"";form.elements.namedItem("notes").value=person?.notes||"";$("#investorDialogTitle").textContent=person?"Edit investor":"Add investor";$("#investorError").textContent="";$("#investorDialog").showModal();}
 function openSip(sip, investorId){const form=$("#sipForm");form.reset();form.elements.namedItem("id").value=sip?.id||"";populateInvestorOptions();if(investorId)form.elements.namedItem("investorId").value=investorId;else if(sip)form.elements.namedItem("investorId").value=sip.investor_id;form.elements.namedItem("scheme").value=sip?.scheme||"";form.elements.namedItem("amount").value=sip?(sip.amount_paise/100):"";form.elements.namedItem("status").value=sip?.status||"active";form.elements.namedItem("dueDay").value=sip?.due_day||"";$("#sipDialogTitle").textContent=sip?"Edit SIP":"Add SIP";$("#sipError").textContent="";$("#sipDialog").showModal();}
 function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2500);}
-$("#loginForm").addEventListener("submit",async e=>{e.preventDefault();const form=new FormData(e.currentTarget);$("#loginError").textContent="";try{const result=await api("/api/login",{method:"POST",body:JSON.stringify({username:form.get("username"),password:form.get("password")})});csrfToken=result.csrfToken;$("#userLabel").textContent=result.username;loginView.hidden=true;appView.hidden=false;await refresh();}catch(err){$("#loginError").textContent=err.message;}});
+$("#loginForm").addEventListener("submit",async e=>{e.preventDefault();const form=new FormData(e.currentTarget);$("#loginError").textContent="";try{const result=await api("/api/login",{method:"POST",body:JSON.stringify({username:form.get("username"),password:form.get("password")})});csrfToken=result.csrfToken;$("#userLabel").textContent=result.username;renderPractice(result.practice);loginView.hidden=true;appView.hidden=false;await refresh();}catch(err){$("#loginError").textContent=err.message;}});
 $("#logoutBtn").addEventListener("click",async()=>{try{await api("/api/logout",{method:"POST"});}finally{showLogin();}});
 ["#addInvestorBtn","#addInvestorTop","#emptyAddBtn"].forEach(id=>$(id).addEventListener("click",()=>openInvestor()));
 document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>b.closest("dialog").close()));
