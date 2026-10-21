@@ -89,18 +89,18 @@ function parseCsv(text){
   if(quoted){if(ch==='"'&&text[i+1]==='"'){cell+='"';i++;}else if(ch==='"')quoted=false;else cell+=ch;}
   else if(ch==='"')quoted=true;
   else if(ch===","){row.push(cell);cell="";}
-  else if(ch==="\\n"){row.push(cell);rows.push(row);row=[];cell="";}
-  else if(ch!=="\\r")cell+=ch;
+  else if(ch==="\n"){row.push(cell);rows.push(row);row=[];cell="";}
+  else if(ch!=="\r")cell+=ch;
  }
  if(quoted)throw new Error("CSV has an unclosed quotation mark.");
  if(cell.length||row.length){row.push(cell);rows.push(row);}
  return rows;
 }
 function isUtiReport(text){
- try{return parseCsv(text.replace(/^\\uFEFF/,"")).some(row=>row.includes("Investor Name")&&row.includes("Installment Amount")&&row.includes("Scheme")&&row.includes("Status"));}catch{return false;}
+ try{return parseCsv(text.replace(/^\uFEFF/,"")).some(row=>row.includes("Investor Name")&&row.includes("Installment Amount")&&row.includes("Scheme")&&row.includes("Status"));}catch{return false;}
 }
 function sanitizeUtiReport(text){
- const rows=parseCsv(text.replace(/^\\uFEFF/,""));
+ const rows=parseCsv(text.replace(/^\uFEFF/,""));
  const headerIndex=rows.findIndex(row=>row.includes("Investor Name")&&row.includes("Installment Amount")&&row.includes("Scheme")&&row.includes("Status"));
  if(headerIndex<0)throw new Error("UTI report columns were not recognized.");
  const headers=rows[headerIndex].map(x=>x.trim());
@@ -109,11 +109,11 @@ function sanitizeUtiReport(text){
  if(required.some(name=>at(name)<0))throw new Error("UTI report is missing required columns.");
  const dayOf=value=>{
   const s=String(value||"").trim();let m;
-  if((m=s.match(/^\\d{4}[-/]\\d{1,2}[-/](\\d{1,2})/)))return Number(m[1]);
-  if((m=s.match(/^(\\d{1,2})[-/]\\d{1,2}[-/]\\d{4}/)))return Number(m[1]);
+  if((m=s.match(/^\d{4}[-/]\d{1,2}[-/](\d{1,2})/)))return Number(m[1]);
+  if((m=s.match(/^(\d{1,2})[-/]\d{1,2}[-/]\d{4}/)))return Number(m[1]);
   return "";
  };
- const cleanField=value=>String(value??"").replace(/[\\r\\n]/g," ").trim();
+ const cleanField=value=>String(value??"").replace(/[\r\n]/g," ").trim();
  const csvCell=value=>'"'+String(value??"").replaceAll('"','""')+'"';
  const out=[["investor","email","phone","scheme","monthly_amount_inr","status","due_day"]];
  for(const row of rows.slice(headerIndex+1)){
@@ -133,5 +133,5 @@ function sanitizeUtiReport(text){
    day&&day<=28?day:""
   ]);
  }
- return out.map(row=>row.map(csvCell).join(",")).join("\\r\\n");
+ return out.map(row=>row.map(csvCell).join(",")).join("\r\n");
 }
