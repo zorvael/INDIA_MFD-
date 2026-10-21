@@ -37,7 +37,7 @@ Deploy behind HTTPS. The app enables secure cookies in production. Back up the d
 - Hashed password login, login rate limiting, server-side SQLite sessions, HttpOnly/SameSite cookies, session rotation, CSRF checks and security headers
 - Investor records and investor-wise SIP entries
 - Active, stopped and registered status labels, monthly amounts and recorded due days
-- CSV import in the exported format, with validation and duplicate SIP skipping
+- CSV import in the dashboard or UTI active SIP report format, with validation and duplicate SIP skipping. The UTI Start Date day is used as the due day and should be verified.
 - CSV export with spreadsheet formula neutralization
 - Daily due-day view based on the records in the database
 
