@@ -38,7 +38,7 @@
           <article class="metric"><span class="metric-icon blue">▤</span><span class="metric-label">ALL SIP RECORDS</span><strong id="sipCount">0</strong><span class="metric-foot">Active, stopped and registered</span></article>
         </div>
         <section id="investors" class="panel">
-          <div class="panel-head"><div><h2>Investors & SIPs</h2><p>Track each client’s scheme, amount and due day.</p></div><div class="actions"><button id="exportBtn" class="secondary">↓ Export CSV</button><button id="addInvestorBtn" class="primary compact">＋ Add investor</button></div></div>
+          <div class="panel-head"><div><h2>Investors & SIPs</h2><p>Track each client’s scheme, amount and due day.</p></div><div class="actions"><button id="importBtn" class="secondary">↑ Import CSV</button><input id="importFile" type="file" accept=".csv,text/csv" hidden><button id="exportBtn" class="secondary">↓ Export CSV</button><button id="addInvestorBtn" class="primary compact">＋ Add investor</button></div></div>
           <div id="emptyState" class="empty"><span class="empty-icon">◎</span><h3>Your client book starts here</h3><p>Add an investor, then record their SIPs. No sample or live financial data is included.</p><button id="emptyAddBtn" class="secondary">Add your first investor</button></div>
           <div id="investorList" class="investor-list"></div>
         </section>
