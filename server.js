@@ -6,6 +6,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const crypto = require("node:crypto");
 const path = require("node:path");
+const { parse } = require("csv-parse/sync");
 
 const app = express();
 const db = new Database(process.env.DB_PATH || "mfd.sqlite");
@@ -53,7 +54,7 @@ app.use(helmet({ contentSecurityPolicy: { directives: {
   imgSrc: ["'self'", "data:"], connectSrc: ["'self'"], objectSrc: ["'none'"],
   frameAncestors: ["'none'"], formAction: ["'self'"], upgradeInsecureRequests: isProduction ? [] : null
 }}}));
-app.use(express.json({ limit: "100kb" }));
+app.use(express.json({ limit: "2mb" }));
 app.use(session({
   name: "mfd.sid",
   secret: process.env.SESSION_SECRET || "development-only-change-me",
@@ -162,6 +163,43 @@ app.put("/api/sips/:id", (req,res) => {
   res.json({updated:out.changes===1});
 });
 app.delete("/api/sips/:id",(req,res)=>{const out=db.prepare("DELETE FROM sips WHERE id=?").run(Number(req.params.id));res.json({deleted:out.changes===1});});
+app.post("/api/import", (req, res) => {
+  const csv = String(req.body?.csv || "");
+  if (!csv || Buffer.byteLength(csv, "utf8") > 1_500_000) return res.status(400).json({ error: "Choose a CSV file smaller than 1.5 MB." });
+  let rows;
+  try { rows = parse(csv, { columns: true, skip_empty_lines: true, trim: true, bom: true, max_record_size: 10000 }); }
+  catch { return res.status(400).json({ error: "CSV format is invalid. Use the exported MFD CSV format." }); }
+  const required = ["investor", "email", "phone", "scheme", "monthly_amount_inr", "status", "due_day"];
+  if (!rows.length || rows.length > 5000 || required.some(key => !Object.hasOwn(rows[0], key))) return res.status(400).json({ error: "CSV needs the exported investor, scheme, amount, status and due day columns, with at most 5,000 rows." });
+  const cleanRows = [];
+  for (const row of rows) {
+    const name=clean(row.investor,120), scheme=clean(row.scheme,160), email=clean(row.email,254), phone=clean(row.phone,40);
+    const amount=Number(row.monthly_amount_inr), status=String(row.status||"").toLowerCase();
+    const dueRaw=String(row.due_day||"").trim(), dueDay=dueRaw?Number(dueRaw):null;
+    if (!name || !scheme || !Number.isFinite(amount) || amount < 0.01 || !["active","stopped","registered"].includes(status) || (dueDay!==null && (!Number.isInteger(dueDay)||dueDay<1||dueDay>28))) {
+      return res.status(400).json({ error: "One or more rows have missing or invalid investor, scheme, amount, status or due day values." });
+    }
+    cleanRows.push({name,scheme,email,phone,amountPaise:Math.round(amount*100),status,dueDay});
+  }
+  const importRows=db.transaction(items=>{
+    let added=0, skipped=0;
+    for(const row of items){
+      let investor=db.prepare("SELECT id FROM investors WHERE lower(name)=lower(?) AND lower(email)=lower(?)").get(row.name,row.email);
+      if(!investor){
+        const out=db.prepare("INSERT INTO investors(name,email,phone) VALUES(?,?,?)").run(row.name,row.email,row.phone);
+        investor={id:Number(out.lastInsertRowid)};
+      }
+      const duplicate=db.prepare("SELECT id FROM sips WHERE investor_id=? AND lower(scheme)=lower(?) AND amount_paise=? AND status=? AND due_day IS ?").get(investor.id,row.scheme,row.amountPaise,row.status,row.dueDay);
+      if(duplicate){skipped++;continue;}
+      db.prepare("INSERT INTO sips(investor_id,scheme,amount_paise,status,due_day,data_source,source_updated_at) VALUES(?,?,?,?,?,'imported',CURRENT_TIMESTAMP)").run(investor.id,row.scheme,row.amountPaise,row.status,row.dueDay);
+      added++;
+    }
+    return {added,skipped};
+  });
+  try { res.json(importRows(cleanRows)); }
+  catch { res.status(400).json({error:"Import could not be completed. No partial changes were saved."}); }
+});
+
 app.get("/api/export", (req,res) => {
   const rows = db.prepare("SELECT i.name AS investor, i.email, i.phone, s.scheme, s.amount_paise/100.0 AS monthly_amount_inr, s.status, s.due_day, s.data_source, s.source_updated_at FROM sips s JOIN investors i ON i.id=s.investor_id ORDER BY i.name,s.scheme").all();
   const headers=["investor","email","phone","scheme","monthly_amount_inr","status","due_day","data_source","source_updated_at"];
