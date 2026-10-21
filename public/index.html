@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102d2b"><title>India MFD | Client book</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <main id="loginView" class="login-shell" hidden>
+    <section class="login-card">
+      <div class="brand-mark">IM</div><p class="eyebrow">PRIVATE CLIENT BOOK</p>
+      <h1>Welcome back</h1><p class="muted">Sign in to manage your investor and SIP records.</p>
+      <form id="loginForm">
+        <label>Username<input name="username" autocomplete="username" required maxlength="50"></label>
+        <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
+        <button class="primary" type="submit">Sign in <span aria-hidden="true">→</span></button>
+      </form><p id="loginError" class="error" role="alert"></p>
+      <p class="fine-print">For authorized MFD use only. Records shown here are manually entered or imported.</p>
+    </section>
+  </main>
+
+  <div id="appView" hidden>
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark small">IM</span><span>India MFD<small>CLIENT BOOK</small></span></div>
+      <p class="nav-label">WORKSPACE</p><a class="nav active" href="#overview">▦ <span>Overview</span></a><a class="nav" href="#investors">◎ <span>Investors & SIPs</span></a>
+      <div class="side-bottom"><span class="status-dot"></span><span>Private workspace</span></div>
+    </aside>
+    <main class="main">
+      <header class="topbar"><div><span class="crumb">Workspace</span><span class="slash">/</span><strong>Overview</strong></div><div class="account"><span id="userLabel"></span><button id="logoutBtn" class="quiet">Sign out</button></div></header>
+      <section class="content">
+        <div class="heading-row"><div><p class="eyebrow">YOUR PRACTICE</p><h1>Client overview</h1><p class="muted">A clear view of investor records and SIP activity.</p></div><button id="addInvestorTop" class="primary compact">＋ Add investor</button></div>
+        <div class="data-note"><span class="note-icon">i</span><div><strong>Manual / imported records</strong><p>Not connected to AMC or RTA systems. Verify status and values against an authorized statement.</p></div><span class="asof">Workspace data</span></div>
+        <div class="metrics">
+          <article class="metric"><span class="metric-icon violet">◎</span><span class="metric-label">INVESTORS</span><strong id="investorCount">0</strong><span class="metric-foot">Client records</span></article>
+          <article class="metric"><span class="metric-icon green">↻</span><span class="metric-label">ACTIVE SIPs</span><strong id="activeCount">0</strong><span class="metric-foot">Marked active</span></article>
+          <article class="metric"><span class="metric-icon amber">₹</span><span class="metric-label">MONTHLY ACTIVE AMOUNT</span><strong id="monthlyAmount">₹0</strong><span class="metric-foot">Sum of active SIP entries</span></article>
+          <article class="metric"><span class="metric-icon blue">▤</span><span class="metric-label">ALL SIP RECORDS</span><strong id="sipCount">0</strong><span class="metric-foot">Active, stopped and registered</span></article>
+        </div>
+        <section id="investors" class="panel">
+          <div class="panel-head"><div><h2>Investors & SIPs</h2><p>Track each client’s scheme, amount and due day.</p></div><div class="actions"><button id="exportBtn" class="secondary">↓ Export CSV</button><button id="addInvestorBtn" class="primary compact">＋ Add investor</button></div></div>
+          <div id="emptyState" class="empty"><span class="empty-icon">◎</span><h3>Your client book starts here</h3><p>Add an investor, then record their SIPs. No sample or live financial data is included.</p><button id="emptyAddBtn" class="secondary">Add your first investor</button></div>
+          <div id="investorList" class="investor-list"></div>
+        </section>
+        <section class="panel due-panel"><div class="panel-head"><div><h2>Upcoming SIP dates</h2><p>Based on manually recorded due days.</p></div><span class="tag">THIS MONTH</span></div><div id="dueList" class="due-list"></div></section>
+        <footer>India MFD · Keep client information confidential · <span>Values and status are only as current as your source record.</span></footer>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="investorDialog"><form id="investorForm" method="dialog">
+    <div class="dialog-head"><div><p class="eyebrow">CLIENT RECORD</p><h2 id="investorDialogTitle">Add investor</h2></div><button type="button" class="close" data-close>×</button></div>
+    <input type="hidden" name="id"><label>Investor name<input name="name" required maxlength="120" autocomplete="off"></label>
+    <div class="two"><label>Email <span class="optional">optional</span><input name="email" type="email" maxlength="254"></label><label>Phone <span class="optional">optional</span><input name="phone" type="tel" maxlength="40"></label></div>
+    <label>Notes <span class="optional">avoid sensitive identifiers</span><textarea name="notes" maxlength="1000" rows="2"></textarea></label>
+    <div class="dialog-actions"><button type="button" class="secondary" data-close>Cancel</button><button class="primary" type="submit">Save investor</button></div><p id="investorError" class="error"></p>
+  </form></dialog>
+
+  <dialog id="sipDialog"><form id="sipForm" method="dialog">
+    <div class="dialog-head"><div><p class="eyebrow">SIP RECORD</p><h2 id="sipDialogTitle">Add SIP</h2></div><button type="button" class="close" data-close>×</button></div>
+    <input type="hidden" name="id"><label>Investor<select name="investorId" required></select></label><label>Scheme name<input name="scheme" required maxlength="160"></label>
+    <div class="two"><label>Monthly amount (₹)<input name="amount" type="number" min="1" step="0.01" required></label><label>Status<select name="status"><option value="active">Active</option><option value="stopped">Stopped</option><option value="registered">Registered</option></select></label></div>
+    <label>Monthly due day <span class="optional">1–28, optional</span><input name="dueDay" type="number" min="1" max="28"></label>
+    <p class="source-hint">Saved as a manual record. Confirm SIP status with your authorized AMC/RTA source.</p>
+    <div class="dialog-actions"><button type="button" class="secondary" data-close>Cancel</button><button class="primary" type="submit">Save SIP</button></div><p id="sipError" class="error"></p>
+  </form></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+</body></html>
