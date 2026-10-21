@@ -78,7 +78,7 @@ app.post("/api/login", loginLimiter, async (req, res, next) => {
       req.session.userId = user.id;
       req.session.username = user.username;
       req.session.csrf = crypto.randomBytes(32).toString("hex");
-      res.json({ username: user.username, csrfToken: req.session.csrf });
+      res.json({ username: user.username, csrfToken: req.session.csrf, practice: { arn: process.env.MFD_ARN || "", name: process.env.MFD_NAME || "", mobile: process.env.MFD_MOBILE || "", email: process.env.MFD_EMAIL || "" } });
     });
   } catch (err) { next(err); }
 });
