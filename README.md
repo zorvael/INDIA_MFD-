@@ -1,6 +1,6 @@
 # India MFD dashboard
 
-A private, single-workspace MVP for maintaining investor and SIP records. Records are entered manually and stored in a local SQLite database. There is no AMC/RTA connection and the app does not fetch NAV, holdings, transactions, or SIP status automatically. The interface labels the data as manual/imported so it is not mistaken for a live financial feed.
+A private, single-workspace MVP for maintaining investor and SIP records. Records are entered manually and stored in a local SQLite database. The importer supports the dashboard CSV format and the UTI active SIP report format. It deliberately ignores PAN and folio identifiers in the UTI file. There is no AMC/RTA connection and the app does not fetch NAV, holdings, transactions, or SIP status automatically. The interface labels the data as manual/imported so it is not mistaken for a live financial feed.
 
 ## Requirements
 
@@ -27,7 +27,7 @@ Set these in the hosting provider's secret/configuration panel, never in source 
 - `NODE_ENV=production`
 - `SESSION_SECRET`: a long random secret (at least 32 random bytes)
 - `DB_PATH`: persistent private database path
-- `PORT`: supplied by host if required
+- `PORT`: supplied by host if required\n- `MFD_ARN`, `MFD_NAME`, `MFD_MOBILE`, `MFD_EMAIL`: optional practice profile values shown only after login. Set these in the hosting provider secret/configuration panel; do not put actual values in source files.
 
 Deploy behind HTTPS. The app enables secure cookies in production. Back up the database using an encrypted, access-controlled process. Do not deploy this sample configuration to a public server before setting production secrets and HTTPS.
 
