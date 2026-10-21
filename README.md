@@ -27,7 +27,8 @@ Set these in the hosting provider's secret/configuration panel, never in source 
 - `NODE_ENV=production`
 - `SESSION_SECRET`: a long random secret (at least 32 random bytes)
 - `DB_PATH`: persistent private database path
-- `PORT`: supplied by host if required\n- `MFD_ARN`, `MFD_NAME`, `MFD_MOBILE`, `MFD_EMAIL`: optional practice profile values shown only after login. Set these in the hosting provider secret/configuration panel; do not put actual values in source files.
+- `PORT`: supplied by host if required
+- `MFD_ARN`, `MFD_NAME`, `MFD_MOBILE`, `MFD_EMAIL`: optional practice profile values shown only after login. Set these in the hosting provider secret/configuration panel; do not put actual values in source files.
 
 Deploy behind HTTPS. The app enables secure cookies in production. Back up the database using an encrypted, access-controlled process. Do not deploy this sample configuration to a public server before setting production secrets and HTTPS.
 
@@ -36,7 +37,8 @@ Deploy behind HTTPS. The app enables secure cookies in production. Back up the d
 - Hashed password login, login rate limiting, server-side SQLite sessions, HttpOnly/SameSite cookies, session rotation, CSRF checks and security headers
 - Investor records and investor-wise SIP entries
 - Active, stopped and registered status labels, monthly amounts and recorded due days
-- CSV import in the exported format, with validation and duplicate SIP skipping\n- CSV export with spreadsheet formula neutralization
+- CSV import in the exported format, with validation and duplicate SIP skipping
+- CSV export with spreadsheet formula neutralization
 - Daily due-day view based on the records in the database
 
 ## Not included
